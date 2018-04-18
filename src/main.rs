@@ -52,6 +52,7 @@ struct Grid {
 }
 
 impl Grid {
+    /// The strs must be valid strings
     pub fn from_strs(s1: &[u8], s2: &[u8], s3: &[u8]) -> Self {
         let mut grid = Grid {
             s1: [0u8; 3],
@@ -77,10 +78,10 @@ impl Grid {
         [s1[idx], s2[idx], s3[idx]]
     }
 
+    /// checks that only the last three constructed strings are valid, the initial strings passed in are assumed to be valid
     fn is_valid(&self, dict: &HashedDictionary) -> bool {
-        dict.contains(&self.s1 as &[u8]) && dict.contains(&self.s2 as &[u8])
-            && dict.contains(&self.s3 as &[u8]) && dict.contains(&self.s4 as &[u8])
-            && dict.contains(&self.s5 as &[u8]) && dict.contains(&self.s6 as &[u8])
+        dict.contains(&self.s4 as &[u8]) && dict.contains(&self.s5 as &[u8])
+            && dict.contains(&self.s6 as &[u8])
     }
 }
 
