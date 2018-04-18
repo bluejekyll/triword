@@ -119,7 +119,7 @@ fn main() {
     let grids: Vec<Grid> = three_letter_dict
         .par_iter()
         .map(|s1| {
-            let mut grids = Vec::<Grid>::with_capacity(1_000);
+            let mut grids = Vec::<Grid>::with_capacity(10_000);
             for s2 in three_letter_dict.iter() {
                 for s3 in three_letter_dict.iter() {
                     let grid = Grid::from_strs(s1, s2, s3);
