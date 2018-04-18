@@ -139,7 +139,7 @@ impl Display for GridLetterCount {
         for (si, slot) in self.0.iter().enumerate() {
             write!(f, "slot {}: ", si)?;
             for (c, count) in slot.iter().enumerate() {
-                write!(f, "{}({}), ", char::from(c as u8 + b'a'), count)?;
+                write!(f, "{}({:6}), ", char::from(c as u8 + b'a'), count)?;
             }
             writeln!(f, "")?;
         }
