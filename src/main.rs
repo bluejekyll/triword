@@ -4,13 +4,13 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-use std::ops::Deref;
 use std::collections::HashSet;
 use std::fmt::{self, Display, Formatter};
+use std::ops::Deref;
 
 use rayon::prelude::*;
 
-const DICTIONARY: &str = include_str!("../resources/DICTIONARY.json");
+const DICTIONARY: &str = include_str!("../resources/dictionary.json");
 //const DICTIONARY: &str = "[\"aaa\",\"aaa\",\"aaa\"]";
 
 // TODO: make this not allocate
