@@ -6,7 +6,9 @@ extern crate serde_json;
 
 use std::collections::HashSet;
 use std::fmt::{self, Display, Formatter};
+use std::iter::{Chain, Enumerate};
 use std::ops::Deref;
+use std::slice::Iter;
 
 use rayon::prelude::*;
 
@@ -41,7 +43,6 @@ impl<'a> Deref for HashedDictionary<'a> {
     }
 }
 
-#[derive(Clone)]
 struct Grid {
     s1: [u8; 3],
     s2: [u8; 3],
@@ -83,6 +84,16 @@ impl Grid {
         dict.contains(&self.s4 as &[u8]) && dict.contains(&self.s5 as &[u8])
             && dict.contains(&self.s6 as &[u8])
     }
+
+    fn slot_iter(&self) -> SlotIter {
+        SlotIter(
+            self.s1
+                .iter()
+                .chain(self.s2.iter())
+                .chain(self.s3.iter())
+                .enumerate(),
+        )
+    }
 }
 
 impl Display for Grid {
@@ -92,6 +103,46 @@ impl Display for Grid {
         writeln!(f, "|{}|", String::from_utf8_lossy(&self.s2),)?;
         writeln!(f, "|{}|", String::from_utf8_lossy(&self.s3),)?;
         writeln!(f, "-----")?;
+
+        Ok(())
+    }
+}
+
+struct SlotIter<'a>(Enumerate<Chain<Chain<Iter<'a, u8>, Iter<'a, u8>>, Iter<'a, u8>>>);
+
+impl<'a> Iterator for SlotIter<'a> {
+    type Item = (usize, u8);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // dereference the &u8 char to an u8
+        self.0.next().map(|(i, c)| (i, *c))
+    }
+}
+
+struct GridLetterCount([[usize; 26]; 9]);
+
+impl GridLetterCount {
+    fn new() -> Self {
+        GridLetterCount([[0; 26]; 9])
+    }
+
+    fn increment(&mut self, grid: &Grid) {
+        // for all the characters and they're indexes, increment the associated count
+        for (i, c) in grid.slot_iter() {
+            self.0[i][(c - b'a') as usize] += 1;
+        }
+    }
+}
+
+impl Display for GridLetterCount {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        for (si, slot) in self.0.iter().enumerate() {
+            write!(f, "slot {}: ", si)?;
+            for (c, count) in slot.iter().enumerate() {
+                write!(f, "{}({}), ", char::from(c as u8 + b'a'), count)?;
+            }
+            writeln!(f, "")?;
+        }
 
         Ok(())
     }
@@ -141,4 +192,11 @@ fn main() {
     // for i in 0..50 {
     //     println!("{}", grids[i]);
     // }
+
+    let mut grid_count = GridLetterCount::new();
+    for grid in grids.iter() {
+        grid_count.increment(grid);
+    }
+
+    println!("slot counts:\n{}", grid_count);
 }
