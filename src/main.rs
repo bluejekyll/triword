@@ -7,12 +7,14 @@ extern crate serde_json;
 use std::collections::HashSet;
 use std::fmt::{self, Display, Formatter};
 use std::iter::{Chain, Enumerate};
-use std::ops::Deref;
+use std::ops::{Deref, Index};
 use std::slice::Iter;
 
 use rayon::prelude::*;
 
-const DICTIONARY: &str = include_str!("../resources/dictionary.json");
+//const DICTIONARY: &str = include_str!("../resources/dictionary.json");
+const DICTIONARY: &str = include_str!("../resources/twl3.txt");
+const ALL_THREES: &str = include_str!("../resources/all-threes.txt");
 //const DICTIONARY: &str = "[\"aaa\",\"aaa\",\"aaa\"]";
 
 // TODO: make this not allocate
@@ -108,6 +110,21 @@ impl Display for Grid {
     }
 }
 
+// returns the slot, index 0 being the top left, and 8 being the bottom right
+impl Index<usize> for Grid {
+    type Output = u8;
+    fn index(&self, index: usize) -> &Self::Output {
+        debug_assert!(index < 9);
+
+        match index {
+            0 | 1 | 2 => &self.s1[index],
+            3 | 4 | 5 => &self.s2[index - 3],
+            6 | 7 | 8 => &self.s3[index - 6],
+            _ => panic!("bad value"),
+        }
+    }
+}
+
 struct SlotIter<'a>(Enumerate<Chain<Chain<Iter<'a, u8>, Iter<'a, u8>>, Iter<'a, u8>>>);
 
 impl<'a> Iterator for SlotIter<'a> {
@@ -137,9 +154,9 @@ impl GridLetterCount {
 impl Display for GridLetterCount {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
         for (si, slot) in self.0.iter().enumerate() {
-            write!(f, "slot {}: ", si)?;
+            write!(f, "slot{}: ", si)?;
             for (c, count) in slot.iter().enumerate() {
-                write!(f, "{}({:6}), ", char::from(c as u8 + b'a'), count)?;
+                write!(f, "{}({:7}),", char::from(c as u8 + b'a'), count)?;
             }
             writeln!(f, "")?;
         }
@@ -148,9 +165,17 @@ impl Display for GridLetterCount {
     }
 }
 
+fn parse_txt_dict() -> Vec<&'static str> {
+    DICTIONARY
+        .split("\n")
+        .chain(ALL_THREES.split("\n"))
+        .collect()
+}
+
 fn main() {
     // TODO: with a custom parser, we could have refs to &'static str
-    let dict: Dictionary = serde_json::from_str(DICTIONARY).expect("failed to parse dictionary");
+    //let dict: Dictionary = serde_json::from_str(DICTIONARY).expect("failed to parse dictionary");
+    let dict = parse_txt_dict();
 
     println!("read this many words: {}", dict.len());
 
@@ -199,4 +224,19 @@ fn main() {
     }
 
     println!("slot counts:\n{}", grid_count);
+
+    // after running the above, q in slot
+    let mut grid_count = GridLetterCount::new();
+    for grid in grids.iter().filter(|grid| grid[2] == b'q') {
+        grid_count.increment(grid);
+    }
+
+    println!("q at 2 slot counts:\n{}", grid_count);
+
+    // for grid in grids
+    //     .iter()
+    //     .filter(|grid| grid[2] == b'q' && grid[7] == b'n')
+    // {
+    //     println!("solution:\n{}", grid);
+    // }
 }
