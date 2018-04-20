@@ -1,3 +1,4 @@
+extern crate radix_trie;
 extern crate rayon;
 extern crate serde;
 #[macro_use]
@@ -10,6 +11,7 @@ use std::iter::{Chain, Enumerate};
 use std::ops::{Deref, Index};
 use std::slice::Iter;
 
+use radix_trie::Trie;
 use rayon::prelude::*;
 
 //const DICTIONARY: &str = include_str!("../resources/dictionary.json");
@@ -180,28 +182,43 @@ fn main() {
     println!("read this many words: {}", dict.len());
 
     // collect the dictionary
-    let three_letter_dict: HashedDictionary = HashedDictionary::from_set(
+    let unique_dict: HashedDictionary = HashedDictionary::from_set(
         dict.iter()
             .filter(|s| s.len() == 3)
             .map(|s| s.as_bytes())
             .collect(),
     );
+    let trie_dict: Trie<&[u8], &[u8]> = unique_dict.iter()
+        // mapping to a tuple of bytes to bytes
+        .map(|s| (*s, *s))
+        .collect();
 
-    println!(
-        "read this many three letter words: {}",
-        three_letter_dict.len()
-    );
+    println!("read this many three letter words: {}", unique_dict.len(),);
 
     // collect the grids
-    let grids: Vec<Grid> = three_letter_dict
+    let grids: Vec<Grid> = unique_dict
         .par_iter()
         .map(|s1| {
             let mut grids = Vec::<Grid>::with_capacity(10_000);
-            for s2 in three_letter_dict.iter() {
-                for s3 in three_letter_dict.iter() {
+            for s2 in unique_dict.iter() {
+                let ps1 = [s1[0], s2[0]];
+                let ps2 = [s1[1], s2[1]];
+                let ps3 = [s1[2], s2[2]];
+
+                if trie_dict.subtrie(&ps1 as &[u8]).is_none() {
+                    continue;
+                }
+                if trie_dict.subtrie(&ps2 as &[u8]).is_none() {
+                    continue;
+                }
+                if trie_dict.subtrie(&ps3 as &[u8]).is_none() {
+                    continue;
+                }
+
+                for s3 in unique_dict.iter() {
                     let grid = Grid::from_strs(s1, s2, s3);
 
-                    if grid.is_valid(&three_letter_dict) {
+                    if grid.is_valid(&unique_dict) {
                         grids.push(grid)
                     }
                 }
