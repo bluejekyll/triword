@@ -7,12 +7,10 @@ extern crate serde_json;
 
 use std::collections::HashSet;
 use std::fmt::{self, Display, Formatter};
+use std::iter::Sum;
 use std::iter::{Chain, Enumerate};
 use std::ops::{Deref, Index};
 use std::slice::Iter;
-
-use radix_trie::Trie;
-use rayon::prelude::*;
 
 // TODO: make this not allocate
 #[derive(Deserialize)]
@@ -146,6 +144,14 @@ impl GridLetterCount {
             self.0[i][(c - b'a') as usize] += 1;
         }
     }
+
+    fn merge(&mut self, grid_count: GridLetterCount) {
+        for (mut this_slot, that_slot) in self.0.iter_mut().zip(grid_count.0.iter()) {
+            for (this_count, that_count) in this_slot.iter_mut().zip(that_slot.iter()) {
+                *this_count += that_count;
+            }
+        }
+    }
 }
 
 impl Display for GridLetterCount {
@@ -159,5 +165,19 @@ impl Display for GridLetterCount {
         }
 
         Ok(())
+    }
+}
+
+impl Sum for GridLetterCount {
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = GridLetterCount>,
+    {
+        let mut grid_count = GridLetterCount::new();
+        for that_count in iter {
+            grid_count.merge(that_count);
+        }
+
+        grid_count
     }
 }

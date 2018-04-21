@@ -6,7 +6,6 @@ extern crate triword;
 
 use radix_trie::Trie;
 use rayon::prelude::*;
-
 use triword::*;
 
 //const DICTIONARY: &str = include_str!("../resources/dictionary.json");
@@ -22,6 +21,11 @@ fn parse_txt_dict() -> Vec<&'static str> {
 }
 
 fn main() {
+    rayon::ThreadPoolBuilder::new()
+        .stack_size(8 * 1024 * 1024)
+        .build_global()
+        .unwrap();
+
     // TODO: with a custom parser, we could have refs to &'static str
     //let dict: Dictionary = serde_json::from_str(DICTIONARY).expect("failed to parse dictionary");
     let dict = parse_txt_dict();
@@ -82,25 +86,27 @@ fn main() {
     //     println!("{}", grids[i]);
     // }
 
-    let mut grid_count = GridLetterCount::new();
-    for grid in grids.iter() {
-        grid_count.increment(grid);
-    }
+    let grid_count: GridLetterCount = grids
+        .par_iter()
+        .fold(GridLetterCount::new, |mut grid_count, grid| {
+            grid_count.increment(grid);
+            grid_count
+        })
+        .sum();
 
     println!("slot counts:\n{}", grid_count);
 
-    // after running the above, q in slot
+    let try_slots = [(5, b'j'), (1, b'x'), (6, b't')];
+
     let mut grid_count = GridLetterCount::new();
-    for grid in grids.iter().filter(|grid| grid[2] == b'q') {
+    for grid in grids
+        .iter()
+        .filter(|grid| try_slots.iter().all(|(slot, ch)| grid[*slot] == *ch))
+    {
         grid_count.increment(grid);
     }
 
-    println!("q at 2 slot counts:\n{}", grid_count);
+    println!("{:?} counts:\n{}", try_slots, grid_count);
 
-    // for grid in grids
-    //     .iter()
-    //     .filter(|grid| grid[2] == b'q' && grid[7] == b'n')
-    // {
-    //     println!("solution:\n{}", grid);
-    // }
+
 }
